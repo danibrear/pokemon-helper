@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Pokémon Helper">
+  <title>Pokémon Helper</title>
+  <!-- Line-art mark, formalized from the .brand-mark CSS in app.css.
+       Stroke weights follow the original 3px-on-31px ratio so the SVG and the
+       CSS mark stay visually identical when placed side by side. -->
+  <g fill="none" stroke="#172338" stroke-width="6">
+    <circle cx="32" cy="32" r="28" />
+    <path d="M4 32H60" stroke-linecap="butt" />
+    <circle cx="32" cy="32" r="10" fill="#ef715d" />
+  </g>
+</svg>

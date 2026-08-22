@@ -1,15 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Route } from "./+types/home";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Dani’s Pokèmon Helper" },
-    {
-      name: "description",
-      content: "Build a smarter Pokémon team with instant type matchup advice.",
-    },
-  ];
-}
+// Title, description and all social meta are intentionally NOT exported from
+// this route. With `ssr: false` only the root route is prerendered into the
+// static HTML, so meta defined here never reaches a social crawler. Worse, at
+// runtime a child route's meta replaces the root's wholesale, so defining a
+// title here would blank out every og: tag the moment React hydrated.
+// It all lives in app/root.tsx instead.
 
 const TYPES = [
   "Normal",
@@ -766,12 +762,12 @@ export default function Home() {
   return (
     <main className="app-shell">
       <nav className="topbar" aria-label="Main navigation">
-        <a className="brand" href="/" aria-label="Dani’s Pokèmon Helper home">
+        <a className="brand" href="/" aria-label="Dani’s Pokémon Helper home">
           <span className="brand-mark">
             <span />
           </span>
           <span>
-            Dani’s Pokèmon <span>Helper</span>
+            Dani’s Pokémon <span>Helper</span>
           </span>
         </a>
         <div className="nav-links">
@@ -1174,7 +1170,7 @@ export default function Home() {
       </section>
       <footer id="type-chart">
         <span>
-          Dani’s Pokèmon <span>Helper</span>
+          Dani’s Pokémon <span>Helper</span>
         </span>
         <p>
           Matchups use the modern 18-type battle chart. Abilities and special

@@ -9,8 +9,63 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import {
+  OG_IMAGE,
+  OG_IMAGE_ALT,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL,
+} from "./site";
+
+/**
+ * Social meta lives on the ROOT route, not on the index route, and that is
+ * load-bearing.
+ *
+ * This app runs with `ssr: false`, so the only HTML that ever reaches a social
+ * crawler is the prerendered shell at build/client/index.html. React Router
+ * generates that shell from the root route alone — child routes are resolved
+ * client-side, after JS boots. Crawlers (Slack, iMessage, Discord, Facebook,
+ * LinkedIn, WhatsApp) do not run JS, so anything exported from
+ * routes/home.tsx is invisible to them.
+ *
+ * Keep these tags here. If they move to a child route, every unfurl silently
+ * goes blank again and nothing in the build will warn you.
+ */
+export const meta: Route.MetaFunction = () => [
+  { title: SITE_TITLE },
+  { name: "description", content: SITE_DESCRIPTION },
+
+  { property: "og:type", content: "website" },
+  { property: "og:site_name", content: SITE_NAME },
+  { property: "og:title", content: SITE_TITLE },
+  { property: "og:description", content: SITE_DESCRIPTION },
+  { property: "og:url", content: `${SITE_URL}/` },
+  { property: "og:locale", content: "en_US" },
+  { property: "og:image", content: OG_IMAGE },
+  // Width/height let crawlers reserve the correct aspect ratio before the
+  // image finishes downloading, which is the difference between a large card
+  // and a thumbnail on first share.
+  { property: "og:image:width", content: "1200" },
+  { property: "og:image:height", content: "630" },
+  { property: "og:image:type", content: "image/png" },
+  { property: "og:image:alt", content: OG_IMAGE_ALT },
+
+  { name: "twitter:card", content: "summary_large_image" },
+  { name: "twitter:title", content: SITE_TITLE },
+  { name: "twitter:description", content: SITE_DESCRIPTION },
+  { name: "twitter:image", content: OG_IMAGE },
+  { name: "twitter:image:alt", content: OG_IMAGE_ALT },
+
+  { name: "theme-color", content: "#285f8f" },
+  { tagName: "link", rel: "canonical", href: `${SITE_URL}/` },
+];
 
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+  { rel: "manifest", href: "/site.webmanifest" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
