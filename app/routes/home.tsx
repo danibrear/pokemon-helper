@@ -59,6 +59,10 @@ type CounterDetails = PokemonDetails & {
   } | null;
 };
 type VersionGroup = { name: string; url: string };
+type SearchHistoryItem = Pick<
+  PokemonDetails,
+  "id" | "name" | "sprite" | "types"
+> & { viewedAt: number };
 
 const API = "https://pokeapi.co/api/v2";
 const CACHE_PREFIX = "type-scout:v1:";
@@ -369,6 +373,7 @@ export default function Home() {
   const [versionGroup, setVersionGroup] = useState("scarlet-violet");
   const [counterMode, setCounterMode] = useState<"all" | "mine">("all");
   const [ownedPokemon, setOwnedPokemon] = useState<string[]>([]);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
   const [searchState, setSearchState] = useState<
     "loading-index" | "idle" | "searching" | "error"
   >("loading-index");
@@ -449,10 +454,53 @@ export default function Home() {
         "danis-pokemon-helper:my-pokemon",
       );
       if (saved) setOwnedPokemon(JSON.parse(saved));
+      const history = window.localStorage.getItem(
+        "danis-pokemon-helper:search-history",
+      );
+      if (history) setSearchHistory(JSON.parse(history));
     } catch {
-      /* A collection is optional when storage is disabled. */
+      /* Personal data is optional when storage is disabled. */
     }
   }, []);
+
+  function storeHistory(history: SearchHistoryItem[]) {
+    setSearchHistory(history);
+    try {
+      window.localStorage.setItem(
+        "danis-pokemon-helper:search-history",
+        JSON.stringify(history),
+      );
+    } catch {
+      /* Optional persistence. */
+    }
+  }
+
+  function addToHistory(details: PokemonDetails) {
+    const entry: SearchHistoryItem = {
+      id: details.id,
+      name: details.name,
+      sprite: details.sprite,
+      types: details.types,
+      viewedAt: Date.now(),
+    };
+    storeHistory(
+      [
+        entry,
+        ...searchHistory.filter((item) => item.name !== details.name),
+      ].slice(0, 12),
+    );
+  }
+
+  function removeFromHistory(name: string) {
+    storeHistory(searchHistory.filter((item) => item.name !== name));
+  }
+
+  function openHistoryItem(item: SearchHistoryItem) {
+    selectPokemon({
+      name: item.name,
+      url: `${API}/pokemon-species/${item.id}/`,
+    });
+  }
 
   async function findCounters(
     target: PokemonDetails,
@@ -645,6 +693,7 @@ export default function Home() {
       setPokemon(details);
       setQuery(displayName(details.name));
       setSelected(details.types);
+      addToHistory(details);
       await findCounters(details);
     } catch {
       setSearchState("error");
@@ -888,6 +937,57 @@ export default function Home() {
                   </span>
                 ))}
               </div>
+            )}
+          </div>
+          <div className="history-shelf">
+            <div className="history-heading">
+              <div>
+                <strong>Search history</strong>
+                <span>Pokémon you’ve opened</span>
+              </div>
+              {searchHistory.length > 0 && (
+                <button onClick={() => storeHistory([])}>Clear all</button>
+              )}
+            </div>
+            {searchHistory.length ? (
+              <div className="history-list">
+                {searchHistory.map((item) => (
+                  <article key={item.name} className="history-item">
+                    <button
+                      className="history-open"
+                      onClick={() => openHistoryItem(item)}>
+                      {item.sprite ? (
+                        <img src={item.sprite} alt="" />
+                      ) : (
+                        <span className="history-placeholder">?</span>
+                      )}
+                      <span>
+                        <strong>{displayName(item.name)}</strong>
+                        <small>
+                          #{String(item.id).padStart(4, "0")} · {item.types.join(" / ")}
+                        </small>
+                      </span>
+                    </button>
+                    <div className="history-actions">
+                      <button
+                        className={ownedPokemon.includes(item.name) ? "saved" : ""}
+                        onClick={() => toggleOwned(item.name)}>
+                        {ownedPokemon.includes(item.name) ? "✓ Mine" : "+ Mine"}
+                      </button>
+                      <button
+                        className="history-remove"
+                        onClick={() => removeFromHistory(item.name)}
+                        aria-label={`Remove ${displayName(item.name)} from search history`}>
+                        ×
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="history-empty">
+                Select a Pokémon from search and it will appear here.
+              </p>
             )}
           </div>
         </div>
