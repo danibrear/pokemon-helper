@@ -151,7 +151,7 @@ function searchMatch(name: string, query: string) {
 async function cachedJson<T>(url: string): Promise<T> {
   const cacheKey = CACHE_PREFIX + url;
   try {
-    const saved = window.localStorage.getItem(cacheKey);
+    const saved = window.sessionStorage.getItem(cacheKey);
     if (saved) return JSON.parse(saved) as T;
   } catch {
     // Browsers can disable storage; the live API remains the fallback.
@@ -165,7 +165,7 @@ async function cachedJson<T>(url: string): Promise<T> {
     throw new Error(`PokéAPI request failed (${response.status})`);
   const data = (await response.json()) as T;
   try {
-    window.localStorage.setItem(cacheKey, JSON.stringify(data));
+    window.sessionStorage.setItem(cacheKey, JSON.stringify(data));
   } catch {
     /* Cache quota is optional. */
   }
@@ -450,6 +450,12 @@ export default function Home() {
 
   useEffect(() => {
     try {
+      // Older releases stored large, disposable API responses in localStorage.
+      // Remove only those app-owned cache entries so personal lists have room.
+      for (let index = window.localStorage.length - 1; index >= 0; index--) {
+        const key = window.localStorage.key(index);
+        if (key?.startsWith(CACHE_PREFIX)) window.localStorage.removeItem(key);
+      }
       const saved = window.localStorage.getItem(
         "danis-pokemon-helper:my-pokemon",
       );
