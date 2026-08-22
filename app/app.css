@@ -7,7 +7,11 @@
   color: var(--ink); background: var(--cream); font-synthesis: none;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* text-size-adjust: 100% stops Safari inflating body copy when the phone is
+   rotated to landscape. `100%` rather than `none` — `none` would also block
+   the user's own pinch-zoom, which is the accessibility trap avoided at the
+   bottom of this file. */
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { margin: 0; min-width: 320px; background: var(--cream); }
 button, a { font: inherit; }
 button { color: inherit; }
@@ -197,4 +201,43 @@ footer p { margin: 0 auto 0 0; }
   .result-row { grid-template-columns: 103px 1fr 31px; gap: 8px; }
   .avoid-types, .counter-grid { grid-template-columns: 1fr; } .explainer { margin-bottom: 45px; gap: 12px 24px; }
   footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+
+/* --------------------------------------------------------------------------
+   Mobile: stop iOS Safari zooming the viewport on input focus.
+
+   Safari auto-zooms whenever a focused text control computes to LESS than
+   16px, and it never zooms back out afterwards — the user is left magnified
+   and scrolled sideways for the rest of the session. 16px is a hard
+   threshold, not a rounding target: 15.5px still triggers it.
+
+   The two controls in this app both sat under it — .search-box input at 14px
+   and .game-picker select at 11px.
+
+   Deliberately NOT fixed with `maximum-scale=1` / `user-scalable=no` on the
+   viewport meta. That does suppress the zoom, but it does so by disabling
+   pinch-zoom entirely, which fails WCAG 2.1 SC 1.4.4 (Resize Text) and takes
+   the page away from anyone who needs to magnify it. Sizing the text
+   correctly costs nothing and breaks nobody.
+
+   Scoped to coarse pointers (plus the existing 850px breakpoint as a
+   belt-and-braces fallback) so the denser desktop sizing is left alone.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse), (max-width: 850px) {
+  .search-box input { font-size: 16px; }
+
+  /* At 16px the select no longer fits opposite its label on one line, so
+     stack the row and let it run full width. Side benefit: an 11px select was
+     a poor tap target on a phone regardless of the zoom behaviour. */
+  .game-picker {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .game-picker select {
+    max-width: none;
+    text-align: left;
+    font-size: 16px;
+  }
 }
