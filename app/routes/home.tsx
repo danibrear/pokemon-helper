@@ -370,6 +370,10 @@ export default function Home() {
   const [counterMode, setCounterMode] = useState<"all" | "mine">("all");
   const [ownedPokemon, setOwnedPokemon] = useState<string[]>([]);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  // Mobile-only disclosure state. On wider screens CSS ignores these flags and
+  // both panels stay open, so desktop behaviour is unchanged.
+  const [typesOpen, setTypesOpen] = useState(true);
+  const [shelvesOpen, setShelvesOpen] = useState(true);
   const [searchState, setSearchState] = useState<
     "loading-index" | "idle" | "searching" | "error"
   >("loading-index");
@@ -696,6 +700,10 @@ export default function Home() {
       setQuery(displayName(details.name));
       setSelected(details.types);
       addToHistory(details);
+      // Once there is a real opponent, the battle plan is the thing the user
+      // came for — fold the pickers away so it is the first thing on screen.
+      setTypesOpen(false);
+      setShelvesOpen(false);
       await findCounters(details);
     } catch {
       setSearchState("error");
@@ -857,7 +865,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="workspace">
+      <section className={`workspace ${pokemon ? "has-plan" : ""}`}>
         <div className="selector-card">
           <div className="section-heading">
             <span className="step">01</span>
@@ -870,7 +878,21 @@ export default function Home() {
                 Clear
               </button>
             )}
+            <button
+              type="button"
+              className="section-toggle"
+              aria-expanded={typesOpen}
+              aria-controls="type-picker"
+              onClick={() => setTypesOpen((open) => !open)}>
+              {typesOpen ? "Hide" : "Change"} types
+              <span className="chevron" aria-hidden="true">
+                ▾
+              </span>
+            </button>
           </div>
+          <div
+            id="type-picker"
+            className={`collapsible ${typesOpen ? "" : "is-collapsed"}`}>
           <div className="type-grid">
             {TYPES.map((type) => {
               const isSelected = selected.includes(type);
@@ -888,6 +910,7 @@ export default function Home() {
                 </button>
               );
             })}
+          </div>
           </div>
           <div className={`selection-summary ${pokemon ? "has-pokemon" : ""}`}>
             {pokemon && (
@@ -917,6 +940,23 @@ export default function Home() {
             </div>
             <span className="selection-count">{selected.length}/2</span>
           </div>
+          <button
+            type="button"
+            className="section-toggle shelf-toggle"
+            aria-expanded={shelvesOpen}
+            aria-controls="saved-and-recent"
+            onClick={() => setShelvesOpen((open) => !open)}>
+            <span>
+              Saved &amp; recent
+              {searchHistory.length ? ` (${searchHistory.length})` : ""}
+            </span>
+            <span className="chevron" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+          <div
+            id="saved-and-recent"
+            className={`collapsible ${shelvesOpen ? "" : "is-collapsed"}`}>
           <div className="my-pokemon-shelf">
             <div>
               <strong>My Pokémon</strong>
@@ -991,6 +1031,7 @@ export default function Home() {
                 Select a Pokémon from search and it will appear here.
               </p>
             )}
+          </div>
           </div>
         </div>
 

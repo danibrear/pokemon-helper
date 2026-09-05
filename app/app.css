@@ -184,6 +184,34 @@ footer { background: #172338; color: #a7b1bd; min-height: 90px; padding: 25px cl
 footer > span:first-child { font-weight: 900; color: white; font-size: 15px; letter-spacing: -.04em; }
 footer p { margin: 0 auto 0 0; }
 
+/* --------------------------------------------------------------------------
+   Collapsible pickers (mobile only).
+
+   On a phone the opponent-type grid and the saved/recent shelves pushed the
+   battle plan a couple of screens down, so a user who searched a Pokemon had
+   to scroll past everything to reach the answer. Below 850px those two blocks
+   become disclosure panels that collapse as soon as a Pokemon is selected, and
+   the battle plan is reordered above the picker card.
+
+   The toggles and the collapse rule live entirely inside the media query, so
+   the desktop layout renders exactly as before with both panels always open.
+   -------------------------------------------------------------------------- */
+.section-toggle { display: none; }
+
+@media (max-width: 850px) {
+  .section-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-left: auto; min-height: 44px; padding: 0 14px; border: 1px solid #d5dad6; border-radius: 999px; background: #f5f4ef; color: var(--teal-dark); font-size: 13px; font-weight: 800; cursor: pointer; }
+  .clear-button + .section-toggle { margin-left: 8px; }
+  .section-toggle .chevron { font-size: 10px; transition: transform .18s; }
+  .section-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+  .shelf-toggle { display: flex; width: 100%; margin: 15px 0 0; justify-content: space-between; }
+  .collapsible.is-collapsed { display: none; }
+
+  /* With an opponent on screen the plan leads; the pickers become the follow-up. */
+  .workspace.has-plan .advice-card { order: -1; }
+  .workspace.has-plan .step { display: none; }
+  .workspace.has-plan .section-heading { min-height: 0; }
+}
+
 @media (max-width: 850px) {
   .nav-links { display: none; } .dex-link { margin-left: auto; }
   .hero { min-height: 390px; padding-top: 48px; } .hero-copy { max-width: 75%; }
