@@ -47,6 +47,13 @@ button { color: inherit; }
 .search-box > button { align-self: stretch; min-width: 93px; border: 0; border-radius: 4px; background: var(--coral); color: white; font-size: 13px; font-weight: 850; cursor: pointer; }
 .search-box > button:hover { background: #df604e; }
 .search-box > button:disabled { opacity: .65; cursor: wait; }
+/* The native `type="search"` cancel button sits flush against the coral submit
+   button with no gap, so on a phone it reads as tucked behind it — and WebKit
+   only paints it while the field is focused. Suppress it and ship our own,
+   which is always visible when there is text and is a real tap target. */
+.search-box input::-webkit-search-cancel-button, .search-box input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+.search-box > button.search-clear { flex: none; min-width: 0; align-self: center; display: grid; place-items: center; width: 34px; height: 34px; margin-right: 6px; padding: 0; border: 0; border-radius: 50%; background: #edefec; color: #6b747d; font-size: 19px; line-height: 1; cursor: pointer; transition: background .15s, color .15s; }
+.search-box > button.search-clear:hover { background: #e1e4e0; color: var(--ink); }
 .suggestions { position: absolute; left: 0; right: 0; top: calc(100% + 7px); padding: 7px; border-radius: 6px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 16px 35px rgba(23,35,56,.18); z-index: 20; }
 .fuzzy-heading { padding: 6px 11px 4px; color: var(--hero-blue); font-size: 10px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .suggestions button { width: 100%; display: flex; justify-content: space-between; border: 0; background: transparent; border-radius: 4px; padding: 9px 11px; text-align: left; color: var(--ink); cursor: pointer; font-weight: 750; }
@@ -76,9 +83,6 @@ button { color: inherit; }
 .type-button .type-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--type-color); font-size: 13px; }
 .type-button.selected { border-color: var(--type-color); background: color-mix(in srgb, var(--type-color) 8%, white); box-shadow: inset 3px 0 var(--type-color); }
 .check { margin-left: auto; color: var(--type-color); font-weight: 900; }
-.type-normal { --type-color: #8a8b7a; }.type-fire { --type-color: #df6246; }.type-water { --type-color: #4788c8; }.type-electric { --type-color: #d6a91f; }.type-grass { --type-color: #4d9856; }.type-ice { --type-color: #54aab4; }
-.type-fighting { --type-color: #bd4e43; }.type-poison { --type-color: #99519a; }.type-ground { --type-color: #c49547; }.type-flying { --type-color: #788fca; }.type-psychic { --type-color: #dc5c84; }.type-bug { --type-color: #84942b; }
-.type-rock { --type-color: #9c843d; }.type-ghost { --type-color: #685e94; }.type-dragon { --type-color: #6557a8; }.type-dark { --type-color: #5a514e; }.type-steel { --type-color: #788891; }.type-fairy { --type-color: #d87898; }
 
 .selection-summary { border-top: 1px solid #e5e3dc; margin-top: 27px; padding-top: 22px; display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .selected-types { display: flex; gap: 7px; text-transform: none; letter-spacing: 0; }
@@ -162,6 +166,15 @@ button { color: inherit; }
 .move-rec b { color: var(--hero-blue); font-size: 11px; }
 .move-rec > small { margin: 0; }
 .move-type { --type-color: #7d8791; padding: 2px 5px; border-radius: 3px; background: var(--type-color); color: white; font-size: 8px; font-style: normal; font-weight: 850; text-transform: uppercase; }
+
+/* The 18-type palette must come AFTER every component that declares a
+   `--type-color` fallback (.type-button, .type-pill, .move-type). These are
+   all single-class selectors, so source order is the only tie-breaker — when
+   the palette sat above them the fallback slate grey won and every result
+   pill and move badge rendered colourless. Keep this block last. */
+.type-normal { --type-color: #8a8b7a; }.type-fire { --type-color: #df6246; }.type-water { --type-color: #4788c8; }.type-electric { --type-color: #d6a91f; }.type-grass { --type-color: #4d9856; }.type-ice { --type-color: #54aab4; }
+.type-fighting { --type-color: #bd4e43; }.type-poison { --type-color: #99519a; }.type-ground { --type-color: #c49547; }.type-flying { --type-color: #788fca; }.type-psychic { --type-color: #dc5c84; }.type-bug { --type-color: #84942b; }
+.type-rock { --type-color: #9c843d; }.type-ghost { --type-color: #685e94; }.type-dragon { --type-color: #6557a8; }.type-dark { --type-color: #5a514e; }.type-steel { --type-color: #788891; }.type-fairy { --type-color: #d87898; }
 .why-rec { margin-top: 4px; color: #818992; font-size: 9px; }
 .no-counters { margin-top: 13px; padding: 20px 14px; border: 1px dashed #d5d5ce; border-radius: 5px; text-align: center; }
 .no-counters strong { font-size: 12px; }
@@ -185,26 +198,54 @@ footer > span:first-child { font-weight: 900; color: white; font-size: 15px; let
 footer p { margin: 0 auto 0 0; }
 
 /* --------------------------------------------------------------------------
-   Collapsible pickers (mobile only).
+   Disclosures and the verdict block.
 
-   On a phone the opponent-type grid and the saved/recent shelves pushed the
-   battle plan a couple of screens down, so a user who searched a Pokemon had
-   to scroll past everything to reach the answer. Below 850px those two blocks
-   become disclosure panels that collapse as soon as a Pokemon is selected, and
-   the battle plan is reordered above the picker card.
+   Which panels are open is decided in routes/home.tsx via `useMediaQuery`, not
+   here — MUI <Collapse> owns the open/closed state and animates it, and the
+   toggle buttons are only rendered at all in the compact layout. So this file
+   styles the controls; it no longer hides anything.
 
-   The toggles and the collapse rule live entirely inside the media query, so
-   the desktop layout renders exactly as before with both panels always open.
+   The verdict block is the compact layout's headline answer: two rows of type
+   pills, "use this" and "don't use", with everything numeric behind the
+   "More detail" disclosure underneath. It is not rendered on a wide screen,
+   where the full ranked list fits without any folding.
    -------------------------------------------------------------------------- */
-.section-toggle { display: none; }
+.disclosure.disclosure { justify-content: space-between; margin-top: 14px; border-color: #cfd8d4; background: #f7f6f1; font-size: 14px; }
+.disclosure.disclosure:hover { border-color: var(--teal); background: #eef5f2; }
+.disclosure .chevron { display: inline-block; font-size: 11px; transition: transform .2s; }
+.disclosure .chevron.is-open { transform: rotate(180deg); }
+.section-heading .disclosure { flex: 1 1 100%; order: 3; }
+
+.verdict { margin-top: 20px; }
+.verdict-opponent { display: flex; align-items: center; gap: 10px; padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid #e5e3dc; }
+.verdict-opponent img { width: 52px; height: 52px; flex: none; object-fit: contain; background: #edf3f0; border-radius: 50%; }
+.verdict-opponent > div { display: flex; flex-direction: column; min-width: 0; }
+.verdict-opponent strong { font-size: 18px; letter-spacing: -.02em; }
+.verdict-opponent span { color: var(--muted); font-size: 12px; font-weight: 700; }
+
+.verdict-group { margin-top: 18px; }
+.verdict-group h3 { margin: 0 0 10px; font-size: 13px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.verdict-use h3 { color: var(--teal); }
+.verdict-avoid h3 { color: #8b5f59; }
+.verdict-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.verdict-pill { position: relative; display: inline-flex; align-items: center; }
+.verdict-pill .type-pill { padding: 10px 14px 10px 10px; font-size: 15px; border-radius: 6px; }
+.verdict-pill .type-pill .type-icon { width: 22px; height: 22px; font-size: 12px; }
+.verdict-pill em { position: absolute; z-index: 1; top: -7px; right: -7px; padding: 2px 6px; border-radius: 999px; border: 2px solid var(--paper); background: #b03e2c; color: white; font-style: normal; font-size: 10px; font-weight: 900; letter-spacing: .02em; }
+
+/* A resisted type is still worth showing but shouldn't compete with the "use"
+   row for attention; a fully immune one is greyed out and struck through,
+   because "this literally cannot hurt it" is a different instruction. */
+.verdict-avoid .type-pill { opacity: .72; }
+.verdict-pill.is-immune .type-pill { opacity: .5; background: #8f97a0; text-decoration: line-through; }
+.verdict-pill.is-immune em { background: #7c848d; }
+.verdict-none { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 
 @media (max-width: 850px) {
-  .section-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-left: auto; min-height: 44px; padding: 0 14px; border: 1px solid #d5dad6; border-radius: 999px; background: #f5f4ef; color: var(--teal-dark); font-size: 13px; font-weight: 800; cursor: pointer; }
-  .clear-button + .section-toggle { margin-left: 8px; }
-  .section-toggle .chevron { font-size: 10px; transition: transform .18s; }
-  .section-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
-  .shelf-toggle { display: flex; width: 100%; margin: 15px 0 0; justify-content: space-between; }
-  .collapsible.is-collapsed { display: none; }
+  .nav-links { display: none; } .dex-link { margin-left: auto; }
+  .hero { min-height: 390px; padding-top: 48px; } .hero-copy { max-width: 75%; }
+  .hero-decoration { right: -90px; opacity: .6; }
+  .workspace { grid-template-columns: 1fr; max-width: 650px; }
 
   /* With an opponent on screen the plan leads; the pickers become the follow-up. */
   .workspace.has-plan .advice-card { order: -1; }
@@ -212,23 +253,165 @@ footer p { margin: 0 auto 0 0; }
   .workspace.has-plan .section-heading { min-height: 0; }
 }
 
-@media (max-width: 850px) {
-  .nav-links { display: none; } .dex-link { margin-left: auto; }
-  .hero { min-height: 390px; padding-top: 48px; } .hero-copy { max-width: 75%; }
-  .hero-decoration { right: -90px; opacity: .6; }
-  .workspace { grid-template-columns: 1fr; max-width: 650px; }
-}
+/* --------------------------------------------------------------------------
+   Phone layout (<= 560px).
+
+   Roughly 9 in 10 sessions are on a phone, so this block is the primary
+   design target rather than a set of desktop patches. Three rules drive it:
+
+   1. Get to the answer fast. The hero shrinks to about a third of its desktop
+      height so the search field is reachable without a scroll, and the
+      collapsible pickers (see the block above) put the battle plan next.
+   2. Nothing below 11px. The desktop card design leans on 8-9px metadata,
+      which is unreadable at arm's length on a handset. Every one of those
+      sizes is lifted here; the desktop values are untouched.
+   3. Every control is at least a 40px tap target, per the 44px guidance with
+      a little slack for chips that sit inside a larger row.
+   -------------------------------------------------------------------------- */
 @media (max-width: 560px) {
-  .topbar { height: 64px; padding-inline: 18px; } .dex-link { display: none; }
-  .hero { padding: 46px 22px 70px; min-height: auto; } .hero-copy { max-width: none; }
-  .hero h1 { font-size: 44px; } .hero p { font-size: 15px; } .hero-decoration { display: none; }
-  .workspace { width: calc(100% - 24px); margin-top: -32px; }
-  .selector-card, .advice-card { padding: 25px 18px; } .type-grid { grid-template-columns: repeat(2, 1fr); }
-  .selection-summary { flex-wrap: wrap; } .selection-summary.has-pokemon .selected-types { width: 100%; } .chosen-pokemon { width: 100%; } .team-add { margin-left: auto; } .selection-count { margin-left: 0; }
-  .history-list { grid-template-columns: 1fr; }
-  .result-row { grid-template-columns: 103px 1fr 31px; gap: 8px; }
-  .avoid-types, .counter-grid { grid-template-columns: 1fr; } .explainer { margin-bottom: 45px; gap: 12px 24px; }
-  footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+  /* --- chrome ---------------------------------------------------------- */
+  .topbar { height: 60px; padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+  .dex-link { display: none; }
+  .brand { font-size: 17px; gap: 10px; }
+
+  /* --- hero: compact, search-led --------------------------------------- */
+  .hero { padding: 30px 20px 58px; min-height: auto; }
+  .hero-copy { max-width: none; }
+  .eyebrow { font-size: 10px; letter-spacing: .14em; margin-bottom: 13px; }
+  .eyebrow i { width: 20px; }
+  .hero h1 { font-size: 34px; line-height: 1.03; letter-spacing: -.032em; }
+  .hero p { margin-top: 13px; max-width: none; font-size: 14px; line-height: 1.5; }
+  .hero-decoration { display: none; }
+
+  .pokemon-search { margin-top: 20px; }
+  .search-box { height: 56px; padding: 6px 6px 6px 14px; border-radius: 8px; }
+  .search-box > span { font-size: 25px; }
+  .search-box input { padding: 0 10px; }
+  .search-box > button.search-clear { width: 40px; height: 40px; margin-right: 4px; font-size: 22px; }
+  .search-box > button { min-width: 82px; border-radius: 6px; font-size: 14px; }
+  .pokemon-search .search-error { font-size: 13px; }
+  .suggestions { padding: 6px; border-radius: 8px; }
+  .suggestions button { min-height: 50px; align-items: center; padding: 10px 12px; font-size: 15px; }
+  .suggestions small { font-size: 12px; }
+  .fuzzy-heading { font-size: 11px; }
+
+  /* --- cards ------------------------------------------------------------ */
+  .workspace { width: calc(100% - 20px); margin-top: -34px; gap: 14px; }
+  .selector-card, .advice-card { padding: 20px 16px; border-radius: 10px; box-shadow: 0 8px 22px rgba(28,45,55,.07); }
+  /* Step badge + title fill row one; Clear and the disclosure pill wrap to
+     row two. Without this the h2 is squeezed into a ~150px column and
+     "Choose opponent types" breaks across three ragged lines. */
+  .section-heading { flex-wrap: wrap; row-gap: 10px; }
+  .section-heading > div { flex: 1 1 calc(100% - 48px); min-width: 0; }
+  /* Give the in-heading disclosure the same full-width pill shape as the
+     "Saved & recent" one below it, so the two read as a matched pair and both
+     are trivially tappable. */
+  .section-heading .clear-button { flex: none; order: 2; margin-left: 0; padding: 0 12px; }
+  /* MUI's `fullWidth` sets width:100%, which forces the button onto its own
+     row regardless of flex-basis — reset it so Clear and the toggle share one. */
+  .section-heading .disclosure { flex: 1 1 auto; width: auto; }
+  .section-heading h2 { font-size: 21px; }
+  .section-heading p { font-size: 12.5px; }
+  .step { width: 36px; height: 36px; margin-right: 12px; font-size: 12px; }
+  .clear-button { font-size: 13px; padding: 10px 4px; }
+  .result-label { font-size: 12px; }
+
+  /* --- type picker ------------------------------------------------------ */
+  .type-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 18px; }
+  .type-button { min-height: 52px; font-size: 14px; }
+  .type-button .type-icon { width: 26px; height: 26px; }
+
+  /* --- opponent summary ------------------------------------------------- */
+  .selection-summary { flex-wrap: wrap; margin-top: 20px; padding-top: 18px; font-size: 11px; }
+  .selection-summary.has-pokemon .selected-types { width: 100%; }
+  .chosen-pokemon { width: 100%; }
+  .chosen-pokemon img { width: 60px; height: 60px; }
+  .chosen-pokemon strong { font-size: 17px; }
+  .chosen-pokemon small { font-size: 10px; }
+  .chosen-pokemon div > span { font-size: 12px; }
+  .team-add { margin-left: auto; min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 12px; }
+  .selection-count { margin-left: 0; }
+  /* Once a real opponent is on screen the types are derived from it, so the
+     "2/2" counter is just noise on a narrow column. */
+  .selection-summary.has-pokemon .selection-count { display: none; }
+
+  /* --- shelves ---------------------------------------------------------- */
+  .my-pokemon-shelf > div:first-child { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .my-pokemon-shelf strong, .history-heading strong { font-size: 14px; }
+  .my-pokemon-shelf > div:first-child span, .history-heading span { font-size: 12px; }
+  .history-heading > button { min-height: 40px; padding: 0 4px; font-size: 12px; }
+  .owned-list { gap: 8px; }
+  .owned-list > span { min-height: 36px; padding: 0 6px 0 12px; font-size: 13px; }
+  .owned-list button { width: 24px; height: 24px; font-size: 14px; }
+  .history-list { grid-template-columns: 1fr; gap: 8px; }
+  .history-item { gap: 8px; padding: 7px; }
+  .history-open { gap: 10px; }
+  .history-open img, .history-placeholder { width: 46px; height: 46px; }
+  .history-open strong { font-size: 14px; }
+  .history-open small { font-size: 11px; }
+  .history-actions { flex-direction: row; gap: 6px; }
+  .history-actions button { min-height: 38px; padding: 0 10px; border-radius: 999px; font-size: 11px; }
+  .history-actions .history-remove { min-width: 38px; font-size: 17px; }
+  .history-empty { font-size: 12px; padding: 16px; }
+
+  /* --- battle plan ------------------------------------------------------ */
+  .verdict-pill .type-pill { padding: 9px 12px 9px 9px; font-size: 14px; }
+  .verdict-group { margin-top: 16px; }
+
+  .recommendation { margin-top: 20px; }
+  .result-row { grid-template-columns: 98px 1fr 40px; gap: 10px; padding: 10px 11px; }
+  .type-pill.compact { min-width: 98px; font-size: 12px; }
+  .multiplier { font-size: 15px; }
+  .power-track { height: 6px; }
+  .avoid-types { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .avoid-item { min-height: 44px; padding: 4px 9px 4px 4px; font-size: 13px; }
+  .avoid-item .type-pill { font-size: 12px; }
+  .neutral-note { font-size: 13px; }
+
+  /* --- counters --------------------------------------------------------- */
+  .counter-title-row { flex-wrap: wrap; }
+  .counter-mode { padding: 3px; border-radius: 999px; }
+  .counter-mode button { min-height: 38px; padding: 0 16px; border-radius: 999px; font-size: 12px; }
+  .game-picker { font-size: 11px; }
+  .counter-grid { grid-template-columns: 1fr; gap: 10px; }
+  .counter-card { min-height: 92px; gap: 11px; padding: 10px 12px 10px 8px; }
+  .counter-card img { width: 74px; height: 74px; }
+  .counter-card strong { font-size: 16px; }
+  .counter-card small { font-size: 12px; }
+  .counter-rank { left: 5px; top: 5px; width: 21px; height: 21px; font-size: 11px; }
+  .move-rec { gap: 6px; margin-top: 8px; }
+  .move-rec b { font-size: 14px; }
+  .move-type { padding: 3px 7px; font-size: 10px; }
+  .why-rec { margin-top: 6px; font-size: 11px; }
+  .counter-loading { font-size: 13px; }
+  .counter-warning { font-size: 12px; line-height: 1.5; }
+  .no-counters strong { font-size: 14px; }
+  .no-counters p { font-size: 12px; }
+  .tip { margin-top: 20px; padding: 14px; }
+  .tip p { font-size: 12.5px; }
+
+  /* --- empty state ------------------------------------------------------ */
+  .advice-card.empty { min-height: 0; }
+  .empty-state { min-height: 240px; }
+  .empty-state p { font-size: 13px; }
+
+  /* With a battle plan on screen the hero is pure preamble — drop the pitch
+     and keep only the wordmark line, so the search field and the answer sit
+     within the first screenful. */
+  .app-shell.has-plan .hero { padding-top: 24px; }
+  .app-shell.has-plan .eyebrow, .app-shell.has-plan .hero p { display: none; }
+  .app-shell.has-plan .hero h1 { font-size: 27px; }
+
+  /* --- foot ------------------------------------------------------------- */
+  .explainer { width: calc(100% - 20px); margin: 18px auto 40px; justify-content: flex-start; gap: 12px 22px; font-size: 13px; }
+  .explainer span { min-width: 26px; }
+  footer { flex-direction: column; align-items: flex-start; gap: 8px; font-size: 12px; padding: 22px 20px calc(22px + env(safe-area-inset-bottom)); }
+}
+
+/* Touch devices get no hover state, so the tap flash is the only feedback the
+   platform gives — make it match the brand instead of the default grey-blue. */
+@media (pointer: coarse) {
+  button, a { -webkit-tap-highlight-color: rgba(14,120,110,.14); }
 }
 
 /* --------------------------------------------------------------------------

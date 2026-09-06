@@ -7,8 +7,11 @@ import {
   ScrollRestoration,
 } from "react-router";
 
+import { StyledEngineProvider, ThemeProvider } from "@mui/material/styles";
+
 import type { Route } from "./+types/root";
 import "./app.css";
+import theme from "./theme";
 import {
   OG_IMAGE,
   OG_IMAGE_ALT,
@@ -97,7 +100,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  // `injectFirst` puts emotion's <style> tags ahead of app.css in the document,
+  // so the hand-rolled styles keep winning ties against MUI's defaults. Without
+  // it MUI is injected last and silently outranks them.
+  return (
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={theme}>
+        <Outlet />
+      </ThemeProvider>
+    </StyledEngineProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

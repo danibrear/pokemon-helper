@@ -1,3 +1,6 @@
+import Button from "@mui/material/Button";
+import Collapse from "@mui/material/Collapse";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { useEffect, useMemo, useState } from "react";
 
 // Title, description and all social meta are intentionally NOT exported from
@@ -357,6 +360,63 @@ function ResultRow({
   );
 }
 
+/**
+ * The one control shape used for every "there is more under here" affordance.
+ * Rendered only in the compact layout; on a wide screen every panel is open
+ * and a toggle would be dead weight.
+ */
+function Disclosure({
+  open,
+  onToggle,
+  controls,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  controls: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      className="disclosure"
+      variant="outlined"
+      color="primary"
+      fullWidth
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls={controls}
+      endIcon={
+        <span className={`chevron ${open ? "is-open" : ""}`} aria-hidden="true">
+          ▾
+        </span>
+      }>
+      {children}
+    </Button>
+  );
+}
+
+/**
+ * A single answer pill. Most types carry no badge — the row they sit in
+ * already says "use" or "avoid". Only the two extremes are called out, because
+ * a 4x double weakness and a 0x immunity are the cases that actually change
+ * which move you pick.
+ */
+function VerdictPill({
+  type,
+  multiplier,
+}: {
+  type: PokemonType;
+  multiplier: number;
+}) {
+  const note = multiplier >= 4 ? "4×" : multiplier === 0 ? "0×" : null;
+  return (
+    <span className={`verdict-pill ${multiplier === 0 ? "is-immune" : ""}`}>
+      <TypePill type={type} />
+      {note && <em>{note}</em>}
+    </span>
+  );
+}
+
 export default function Home() {
   const [selected, setSelected] = useState<PokemonType[]>(["Grass", "Poison"]);
   const [pokemonIndex, setPokemonIndex] = useState<PokemonIndexItem[]>([]);
@@ -374,6 +434,12 @@ export default function Home() {
   // both panels stay open, so desktop behaviour is unchanged.
   const [typesOpen, setTypesOpen] = useState(true);
   const [shelvesOpen, setShelvesOpen] = useState(true);
+  const [detailOpen, setDetailOpen] = useState(false);
+  // Matches the `@media (max-width: 850px)` block in app.css exactly. Written
+  // as a literal rather than `theme.breakpoints.down("md")` because MUI's
+  // `down()` subtracts 0.05px, which would disagree with the stylesheet at
+  // precisely 850px wide.
+  const compact = useMediaQuery("(max-width: 850px)", { noSsr: true });
   const [searchState, setSearchState] = useState<
     "loading-index" | "idle" | "searching" | "error"
   >("loading-index");
@@ -704,6 +770,7 @@ export default function Home() {
       // came for — fold the pickers away so it is the first thing on screen.
       setTypesOpen(false);
       setShelvesOpen(false);
+      setDetailOpen(false);
       await findCounters(details);
     } catch {
       setSearchState("error");
@@ -768,7 +835,7 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${pokemon ? "has-plan" : ""}`}>
       <nav className="topbar" aria-label="Main navigation">
         <a className="brand" href="/" aria-label="Dani’s Pokémon Helper home">
           <span className="brand-mark">
@@ -818,13 +885,27 @@ export default function Home() {
                 placeholder={
                   searchState === "loading-index"
                     ? "Loading the Pokédex…"
-                    : "Search a Pokémon, e.g. Garchomp"
+                    : "Search a Pokémon…"
                 }
                 aria-label="Search for a Pokémon"
                 disabled={searchState === "loading-index"}
                 autoComplete="off"
                 type="search"
               />
+              {query && (
+                <button
+                  type="button"
+                  className="search-clear"
+                  aria-label="Clear search"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setQuery("");
+                    setError("");
+                    setShowSuggestions(false);
+                  }}>
+                  <span aria-hidden="true">×</span>
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={
@@ -878,21 +959,16 @@ export default function Home() {
                 Clear
               </button>
             )}
-            <button
-              type="button"
-              className="section-toggle"
-              aria-expanded={typesOpen}
-              aria-controls="type-picker"
-              onClick={() => setTypesOpen((open) => !open)}>
-              {typesOpen ? "Hide" : "Change"} types
-              <span className="chevron" aria-hidden="true">
-                ▾
-              </span>
-            </button>
+            {compact && (
+              <Disclosure
+                open={typesOpen}
+                onToggle={() => setTypesOpen((open) => !open)}
+                controls="type-picker">
+                {typesOpen ? "Hide types" : "Change types"}
+              </Disclosure>
+            )}
           </div>
-          <div
-            id="type-picker"
-            className={`collapsible ${typesOpen ? "" : "is-collapsed"}`}>
+          <Collapse in={!compact || typesOpen} id="type-picker">
           <div className="type-grid">
             {TYPES.map((type) => {
               const isSelected = selected.includes(type);
@@ -911,7 +987,7 @@ export default function Home() {
               );
             })}
           </div>
-          </div>
+          </Collapse>
           <div className={`selection-summary ${pokemon ? "has-pokemon" : ""}`}>
             {pokemon && (
               <div className="chosen-pokemon">
@@ -940,23 +1016,16 @@ export default function Home() {
             </div>
             <span className="selection-count">{selected.length}/2</span>
           </div>
-          <button
-            type="button"
-            className="section-toggle shelf-toggle"
-            aria-expanded={shelvesOpen}
-            aria-controls="saved-and-recent"
-            onClick={() => setShelvesOpen((open) => !open)}>
-            <span>
+          {compact && (
+            <Disclosure
+              open={shelvesOpen}
+              onToggle={() => setShelvesOpen((open) => !open)}
+              controls="saved-and-recent">
               Saved &amp; recent
               {searchHistory.length ? ` (${searchHistory.length})` : ""}
-            </span>
-            <span className="chevron" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-          <div
-            id="saved-and-recent"
-            className={`collapsible ${shelvesOpen ? "" : "is-collapsed"}`}>
+            </Disclosure>
+          )}
+          <Collapse in={!compact || shelvesOpen} id="saved-and-recent">
           <div className="my-pokemon-shelf">
             <div>
               <strong>My Pokémon</strong>
@@ -1032,7 +1101,7 @@ export default function Home() {
               </p>
             )}
           </div>
-          </div>
+          </Collapse>
         </div>
 
         <div
@@ -1043,9 +1112,11 @@ export default function Home() {
             <div>
               <h2>Your battle plan</h2>
               <p>
-                {selected.length
-                  ? "Best attacking types, ranked"
-                  : "Waiting for an opponent"}
+                {!selected.length
+                  ? "Waiting for an opponent"
+                  : compact
+                    ? "What works, and what doesn’t"
+                    : "Best attacking types, ranked"}
               </p>
             </div>
           </div>
@@ -1059,6 +1130,60 @@ export default function Home() {
             </div>
           ) : (
             <>
+              {compact && (
+                <div className="verdict">
+                  {pokemon && (
+                    <div className="verdict-opponent">
+                      {pokemon.sprite && <img src={pokemon.sprite} alt="" />}
+                      <div>
+                        <strong>{displayName(pokemon.name)}</strong>
+                        <span>{pokemon.types.join(" / ")}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="verdict-group verdict-use">
+                    <h3>Use this</h3>
+                    {recommended.length ? (
+                      <div className="verdict-pills">
+                        {recommended.map((item) => (
+                          <VerdictPill key={item.type} {...item} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="verdict-none">
+                        Nothing is super effective — lead with your hardest
+                        hitter.
+                      </p>
+                    )}
+                  </div>
+                  <div className="verdict-group verdict-avoid">
+                    <h3>Don’t use</h3>
+                    {avoid.length ? (
+                      /* Worst first: a 0x immunity matters far more than a
+                         0.5x resist, and the reversed order puts it at the
+                         top of the row where the eye lands. */
+                      <div className="verdict-pills">
+                        {[...avoid].reverse().map((item) => (
+                          <VerdictPill key={item.type} {...item} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="verdict-none">
+                        Nothing is resisted — anything lands normally.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {compact && (
+                <Disclosure
+                  open={detailOpen}
+                  onToggle={() => setDetailOpen((open) => !open)}
+                  controls="battle-detail">
+                  {detailOpen ? "Hide detail" : "More detail"}
+                </Disclosure>
+              )}
+              <Collapse in={!compact || detailOpen} id="battle-detail">
               <div className="recommendation">
                 <div className="result-label">
                   <span>✦</span> Recommended
@@ -1190,6 +1315,7 @@ export default function Home() {
                   super-effective damage.
                 </p>
               </div>
+              </Collapse>
             </>
           )}
         </div>
