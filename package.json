@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "install:safe": "npm install --package-lock-only && npm ci",
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "vite preview --outDir build/client",
